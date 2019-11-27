@@ -19,14 +19,32 @@ class SignIn extends React.Component {
 
   handleSubmit = async event => {
     event.preventDefault();
-
     const { email, password } = this.state;
-
+    if (!email || !password) {
+      this.setState({ errors: "输入邮箱和密码" });
+      return;
+    }
     try {
       await auth.signInWithEmailAndPassword(email, password);
-      this.setState({ email: '', password: '' });
+      this.setState({
+        email: "",
+        password: ""
+      });
     } catch (error) {
       console.log(error);
+      switch (error.code) {
+        case "auth/user-not-found":
+          this.setState({ errors: "用户名或密码不正确，请修改" });
+          break;
+        case "auth/wrong-password":
+          this.setState({ errors: "用户名或密码不正确，请修改" });
+          break;
+        case "auth/network-request-failed":
+          this.setState({ errors: "网络故障，请检查你的网络然后重试" });
+          break;
+        default:
+          break;
+      }
     }
   };
 
@@ -43,6 +61,7 @@ class SignIn extends React.Component {
         <span>Sign in with your email and password</span>
 
         <form onSubmit={this.handleSubmit}>
+        {this.state.errors ? <div className="text-danger">{this.state.errors}</div> : null}
           <FormInput
             name='email'
             type='email'

@@ -15,36 +15,57 @@ class SignUp extends React.Component {
       displayName: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      passwordConf: "",
+      errors: [],
     };
   }
 
   handleSubmit = async event => {
     event.preventDefault();
 
-    const { displayName, email, password, confirmPassword } = this.state;
-
-    if (password !== confirmPassword) {
-      alert("passwords don't match");
+    const { displayName, email, password, passwordConf } = this.state;
+    if (password !== passwordConf) {
+      this.setState(prevState => ({
+        errors: ["密码不匹配，请确认", ...prevState.errors]
+      }));
       return;
     }
-
+    if (!displayName || !email || !password || !passwordConf) {
+      this.setState({
+        errors: "请输入完整的账号信息"
+      });
+      return;
+    }
     try {
       const { user } = await auth.createUserWithEmailAndPassword(
         email,
         password
       );
-
       await createUserProfileDocument(user, { displayName });
-
       this.setState({
-        displayName: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
+        displayName: "",
+        email: "",
+        password: "",
+        passwordConf: "",
+        errors: []
       });
     } catch (error) {
-      console.error(error);
+      console.log(error);
+      if (error.code === "auth/weak-password") {
+        this.setState({
+          errors: "请输入至少6位以上密码"
+        });
+      }
+      if (error.code === "auth/network-request-failed") {
+        this.setState({
+          errors: "网络错误，请检查你的网络连接"
+        });
+      }
+      if (error.code === "auth/email-already-in-use") {
+        this.setState({
+          errors: "邮箱已经被注册了"
+        });
+      }
     }
   };
 
@@ -55,12 +76,15 @@ class SignUp extends React.Component {
   };
 
   render() {
-    const { displayName, email, password, confirmPassword } = this.state;
+    const { errors,displayName, email, password, passwordConf } = this.state;
     return (
       <div className='sign-up'>
         <h2 className='title'>I do not have a account</h2>
         <span>Sign up with your email and password</span>
         <form className='sign-up-form' onSubmit={this.handleSubmit}>
+        {errors ? (
+                <div className="text-danger font-weight-bold">{errors}</div>
+              ) : null}
           <FormInput
             type='text'
             name='displayName'
@@ -87,8 +111,8 @@ class SignUp extends React.Component {
           />
           <FormInput
             type='password'
-            name='confirmPassword'
-            value={confirmPassword}
+            name='passwordConf'
+            value={passwordConf}
             onChange={this.handleChange}
             label='Confirm Password'
             required
